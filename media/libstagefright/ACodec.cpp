@@ -827,16 +827,6 @@ status_t ACodec::setPortMode(int32_t portIndex, IOMX::PortMode mode) {
 
     mPortMode[portIndex] = mode;
 
-#if !defined(TARGET_USES_MEDIA_EXTENSIONS) && defined(TARGET_HAS_LEGACY_CAMERA_HAL1)
-    // For this specific case we could be using camera source even if storeMetaDataInBuffers
-    // returns Gralloc source. Pretend that we are; this will force us to use nBufferSize.
-    if (mode == IOMX::kPortModeDynamicGrallocSource) {
-        mPortMode[portIndex] = IOMX::kPortModeDynamicCameraSource;
-        ALOGE("AdrianDC setPortMode %d %d", mPortMode[portIndex], portIndex);
-        ALOGE("AdrianDC For this specific case we could be using camera source even if storeMetaDataInBuffers");
-    }
-#endif
-
     ALOGE("AdrianDC setPortMode OUT mode %d (%s)", mPortMode[portIndex], mComponentName.c_str());
     return OK;
 }
@@ -885,9 +875,9 @@ status_t ACodec::allocateBuffersOnPort(OMX_U32 portIndex) {
                 bufSize = sizeof(VideoNativeHandleMetadata);
 #if !defined(TARGET_USES_MEDIA_EXTENSIONS) && defined(TARGET_HAS_LEGACY_CAMERA_HAL1)
             } else if (mode == IOMX::kPortModeDynamicGrallocSource) {
-                bufSize = max(sizeof(VideoGrallocMetadata), sizeof(VideoNativeMetadata));
-            } else if (portIndex == kPortIndexInput && mode == IOMX::kPortModeDynamicCameraSource) {
-                bufSize = max(sizeof(VideoGrallocMetadata), sizeof(VideoNativeMetadata));
+                bufSize = sizeof(VideoGrallocMetadata);
+            } else if (mode == IOMX::kPortModeDynamicCameraSource) {
+                bufSize = max(bufSize, sizeof(VideoNativeMetadata));
 #endif
             }
 ALOGE("AdrianDC bufSize = %d  mode = %d // %d / %d", bufSize, mode, IOMX::kPortModeDynamicGrallocSource, IOMX::kPortModeDynamicANWBuffer);
@@ -1801,6 +1791,8 @@ status_t ACodec::configureCodec(
             mode = IOMX::kPortModeDynamicANWBuffer;
         } else if (storeMeta == kMetadataBufferTypeGrallocSource) {
             mode = IOMX::kPortModeDynamicGrallocSource;
+        } else if (storeMeta == kMetadataBufferTypeCameraSource) {
+            mode = IOMX::kPortModeDynamicCameraSource;
 #else
         } else if (storeMeta == kMetadataBufferTypeANWBuffer ||
                 storeMeta == kMetadataBufferTypeGrallocSource) {
@@ -1822,8 +1814,8 @@ status_t ACodec::configureCodec(
         // For this specific case we could be using camera source even if storeMetaDataInBuffers
         // returns Gralloc source. Pretend that we are; this will force us to use nBufferSize.
         if (mode == IOMX::kPortModeDynamicGrallocSource) {
-            mode = IOMX::kPortModeDynamicANWBuffer;
-            ALOGE("AdrianDC For this specific case we could be using camera source even if storeMetaDataInBuffers");
+            //mode = IOMX::kPortModeDynamicANWBuffer;
+            mode = IOMX::kPortModeDynamicCameraSource;
         }
 #endif
 
@@ -5955,6 +5947,8 @@ void ACodec::BaseState::onInputBufferFilled(const sp<AMessage> &msg) {
                         //err2 = mCodec->mOMXNode->emptyBuffer(
                         //    bufferID, handle, flags, timeUs, info->mFenceFd);
                     }
+                    break;
+                case IOMX::kPortModeDynamicCameraSource:
                     break;
 #endif
                 case IOMX::kPortModeDynamicNativeHandle:

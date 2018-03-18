@@ -328,15 +328,11 @@ private:
     BufferInfo *dequeueBufferFromNativeWindow();
 
     inline bool storingMetadataInDecodedBuffers() {
-        return (mPortMode[kPortIndexOutput] == IOMX::kPortModeDynamicANWBuffer ||
-                mPortMode[kPortIndexOutput] == IOMX::kPortModeDynamicGrallocSource ||
-                mPortMode[kPortIndexOutput] == IOMX::kPortModeDynamicCameraSource) && !mIsEncoder;
+        return (mPortMode[kPortIndexOutput] == IOMX::kPortModeDynamicANWBuffer) && !mIsEncoder;
     }
 
     inline bool usingSecureBufferOnEncoderOutput() {
-        return (mPortMode[kPortIndexOutput] == IOMX::kPortModePresetSecureBuffer ||
-                mPortMode[kPortIndexOutput] == IOMX::kPortModeDynamicGrallocSource ||
-                mPortMode[kPortIndexOutput] == IOMX::kPortModeDynamicCameraSource) && mIsEncoder;
+        return (mPortMode[kPortIndexOutput] == IOMX::kPortModePresetSecureBuffer) && mIsEncoder;
     }
 
     BufferInfo *findBufferByID(

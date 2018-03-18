@@ -156,19 +156,7 @@ struct BufferMeta {
 
     // return the codec buffer
     sp<ABuffer> getBuffer(const OMX_BUFFERHEADERTYPE *header, bool limit) {
-        return getBuffer(header, false, limit);
-    }
-
-    // return either the codec or the backup buffer
-    sp<ABuffer> getBuffer(const OMX_BUFFERHEADERTYPE *header, bool backup, bool limit) {
-        sp<ABuffer> buf;
-        if (backup && mMem != NULL) {
-            ALOGE("getBuffer Old %d %d", backup, limit);
-            buf = new ABuffer(mMem->pointer(), mMem->size());
-        } else {
-            ALOGE("getBuffer New %d", backup);
-            buf = new ABuffer(header->pBuffer, header->nAllocLen);
-        }
+        sp<ABuffer> buf = new ABuffer(header->pBuffer, header->nAllocLen);
         if (limit) {
             if (header->nOffset + header->nFilledLen > header->nOffset
                     && header->nOffset + header->nFilledLen <= header->nAllocLen) {
@@ -949,8 +937,7 @@ status_t OMXNodeInstance::storeMetaDataInBuffers_l(
     params.bStoreMetaData = enable;
 
     OMX_ERRORTYPE err =
-        requestedType == kMetadataBufferTypeANWBuffer ||
-                requestedType == kMetadataBufferTypeNativeHandleSource
+        requestedType == kMetadataBufferTypeANWBuffer
                 ? OMX_GetExtensionIndex(mHandle, nativeBufferName, &index)
                 : OMX_ErrorUnsupportedIndex;
     OMX_ERRORTYPE xerr = err;
@@ -1758,9 +1745,8 @@ status_t OMXNodeInstance::emptyBuffer_l(
 ALOGE("AdrianDC 0 %d / %d", mMetadataType[kPortIndexInput], kMetadataBufferTypeGrallocSource);
 
 #if !defined(TARGET_USES_MEDIA_EXTENSIONS) && defined(TARGET_HAS_LEGACY_CAMERA_HAL1)
-ALOGE("AdrianDC emptyBuffer_l HAL1");
-    sp<ABuffer> backup = buffer_meta->getBuffer(header, true /* backup */, false /* limit */);
-    sp<ABuffer> codec = buffer_meta->getBuffer(header, false /* backup */, false /* limit */);
+    sp<ABuffer> backup = buffer_meta->getBuffer(header, false /* limit */);
+    sp<ABuffer> codec = buffer_meta->getBuffer(header, false /* limit */);
 
 ALOGE("AdrianDC 1 %d / %d", mMetadataType[kPortIndexInput], kMetadataBufferTypeGrallocSource);
 
