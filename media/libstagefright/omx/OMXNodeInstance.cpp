@@ -1190,18 +1190,8 @@ status_t OMXNodeInstance::useBuffer_l(
     // we use useBuffer for output metadata regardless of quirks
     if (!isOutputGraphicMetadata && (mQuirks & requiresAllocateBufferBit)) {
         // metadata buffers are not connected cross process; only copy if not meta.
-        buffer_meta = new BufferMeta(params, hParams, portIndex,
-#if !defined(TARGET_USES_MEDIA_EXTENSIONS) && defined(TARGET_HAS_LEGACY_CAMERA_HAL1)
-                true /* copy */,
-#else
-                !isMetadata /* copy */,
-#endif
-                NULL /* data */);
-#if !defined(TARGET_USES_MEDIA_EXTENSIONS) && defined(TARGET_HAS_LEGACY_CAMERA_HAL1)
-ALOGE("AdrianDC useBuffer_l copy true");
-#else
-ALOGE("AdrianDC useBuffer_l copy %d", !isMetadata);
-#endif
+        buffer_meta = new BufferMeta(
+                    params, hParams, portIndex, !isMetadata /* copy */, NULL /* data */);
 
         err = OMX_AllocateBuffer(
                 mHandle, &header, portIndex, buffer_meta, allottedSize);
@@ -1742,37 +1732,10 @@ status_t OMXNodeInstance::emptyBuffer_l(
     BufferMeta *buffer_meta =
         static_cast<BufferMeta *>(header->pAppPrivate);
 
-ALOGE("AdrianDC 0 %d / %d", mMetadataType[kPortIndexInput], kMetadataBufferTypeGrallocSource);
-
-#if !defined(TARGET_USES_MEDIA_EXTENSIONS) && defined(TARGET_HAS_LEGACY_CAMERA_HAL1)
-    sp<ABuffer> backup = buffer_meta->getBuffer(header, false /* limit */);
-    sp<ABuffer> codec = buffer_meta->getBuffer(header, false /* limit */);
-
-ALOGE("AdrianDC 1 %d / %d", mMetadataType[kPortIndexInput], kMetadataBufferTypeGrallocSource);
-
-    // convert incoming ANW meta buffers if component is configured for gralloc metadata mode
-    // ignore rangeOffset in this case
-    if (mMetadataType[kPortIndexInput] == kMetadataBufferTypeGrallocSource
-            && backup->capacity() >= sizeof(VideoNativeMetadata)
-            && codec->capacity() >= sizeof(VideoGrallocMetadata)
-            && ((VideoNativeMetadata *)backup->base())->eType
-                    == kMetadataBufferTypeANWBuffer) {
-        VideoNativeMetadata &backupMeta = *(VideoNativeMetadata *)backup->base();
-        VideoGrallocMetadata &codecMeta = *(VideoGrallocMetadata *)codec->base();
-        CLOG_BUFFER(emptyBuffer, "converting ANWB %p to handle %p",
-                backupMeta.pBuffer, backupMeta.pBuffer->handle);
-        codecMeta.pHandle = backupMeta.pBuffer != NULL ? backupMeta.pBuffer->handle : NULL;
-        codecMeta.eType = kMetadataBufferTypeGrallocSource;
-        header->nFilledLen = rangeLength ? sizeof(codecMeta) : 0;
-#else
-ALOGE("AdrianDC emptyBuffer_l not HAL1");
-ALOGE("AdrianDC 2 %d / %d", mMetadataType[kPortIndexInput], kMetadataBufferTypeGrallocSource);
-
     // set up proper filled length if component is configured for gralloc metadata mode
     // ignore rangeOffset in this case (as client may be assuming ANW meta buffers).
     if (mMetadataType[kPortIndexInput] == kMetadataBufferTypeGrallocSource) {
         header->nFilledLen = rangeLength ? sizeof(VideoGrallocMetadata) : 0;
-#endif
         header->nOffset = 0;
     } else {
         // rangeLength and rangeOffset must be a subset of the allocated data in the buffer.
