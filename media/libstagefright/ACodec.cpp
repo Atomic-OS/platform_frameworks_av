@@ -874,7 +874,7 @@ status_t ACodec::allocateBuffersOnPort(OMX_U32 portIndex) {
             } else if (mode == IOMX::kPortModeDynamicNativeHandle) {
                 bufSize = sizeof(VideoNativeHandleMetadata);
             }
-ALOGE("AdrianDC bufSize = %d  mode = %d // %d / %d", bufSize, mode, IOMX::kPortModeDynamicGrallocSource, IOMX::kPortModeDynamicANWBuffer);
+ALOGE("AdrianDC bufSize = %d  mode = %d // %d / %d", bufSize, mode, IOMX::kPortModeDynamicANWBuffer, IOMX::kPortModeDynamicANWBuffer);
 
             size_t conversionBufferSize = 0;
 
@@ -5888,9 +5888,6 @@ void ACodec::BaseState::onInputBufferFilled(const sp<AMessage> &msg) {
                      kPortIndexInput, mCodec->mComponentName.c_str());
                 status_t err2 = OK;
                 switch (mCodec->mPortMode[kPortIndexInput]) {
-                case IOMX::kPortModeDynamicCameraSource:
-                    ALOGE("AdrianDC kPortModeDynamicCameraSource break");
-                    break;
                 case IOMX::kPortModePresetByteBuffer:
                     ALOGE("AdrianDC kPortModePresetByteBuffer break");
                 case IOMX::kPortModePresetANWBuffer:
