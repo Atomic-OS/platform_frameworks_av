@@ -128,13 +128,7 @@ status_t SurfaceMediaSource::setFrameRate(int32_t fps)
 
 MetadataBufferType SurfaceMediaSource::metaDataStoredInVideoBuffers() const {
     ALOGV("isMetaDataStoredInVideoBuffers");
-#if !defined(TARGET_USES_MEDIA_EXTENSIONS) && defined(TARGET_HAS_LEGACY_CAMERA_HAL1)
-    ALOGE("AdrianDC kMetadataBufferTypeGrallocSource");
-    return kMetadataBufferTypeGrallocSource;
-#else
-    ALOGE("AdrianDC kMetadataBufferTypeANWBuffer");
     return kMetadataBufferTypeANWBuffer;
-#endif
 }
 
 int32_t SurfaceMediaSource::getFrameRate( ) const {
@@ -255,35 +249,6 @@ sp<MetaData> SurfaceMediaSource::getFormat()
     return meta;
 }
 
-#if !defined(TARGET_USES_MEDIA_EXTENSIONS) && defined(TARGET_HAS_LEGACY_CAMERA_HAL1)
-// Pass the data to the MediaBuffer. Pass in only the metadata
-// The metadata passed consists of two parts:
-// 1. First, there is an integer indicating that it is a GRAlloc
-// source (kMetadataBufferTypeGrallocSource)
-// 2. This is followed by the buffer_handle_t that is a handle to the
-// GRalloc buffer. The encoder needs to interpret this GRalloc handle
-// and encode the frames.
-// --------------------------------------------------------------
-// |  kMetadataBufferTypeGrallocSource | sizeof(buffer_handle_t) |
-// --------------------------------------------------------------
-// Note: Call only when you have the lock
-static void passMetadataBuffer(MediaBuffer **buffer,
-        buffer_handle_t bufferHandle) {
-    *buffer = new MediaBuffer(4 + sizeof(buffer_handle_t));
-    char *data = (char *)(*buffer)->data();
-    if (data == NULL) {
-        ALOGE("Cannot allocate memory for metadata buffer!");
-        return;
-    }
-    OMX_U32 type = kMetadataBufferTypeGrallocSource;
-    memcpy(data, &type, 4);
-    memcpy(data + 4, &bufferHandle, sizeof(buffer_handle_t));
-
-    ALOGV("handle = %p, , offset = %zu, length = %zu",
-            bufferHandle, (*buffer)->range_length(), (*buffer)->range_offset());
-}
-#endif
-
 // Pass the data to the MediaBuffer. Pass in only the metadata
 // Note: Call only when you have the lock
 void SurfaceMediaSource::passMetadataBuffer_l(MediaBuffer **buffer,
@@ -387,11 +352,7 @@ status_t SurfaceMediaSource::read(
     mNumFramesEncoded++;
     // Pass the data to the MediaBuffer. Pass in only the metadata
 
-#if !defined(TARGET_USES_MEDIA_EXTENSIONS) && defined(TARGET_HAS_LEGACY_CAMERA_HAL1)
-    passMetadataBuffer(buffer, mSlots[mCurrentSlot].mGraphicBuffer->handle);
-#else
     passMetadataBuffer_l(buffer, mSlots[mCurrentSlot].mGraphicBuffer->getNativeBuffer());
-#endif
 
     (*buffer)->setObserver(this);
     (*buffer)->add_ref();
