@@ -607,7 +607,11 @@ status_t CameraClient::setVideoBufferMode(int32_t videoBufferMode) {
         return UNKNOWN_ERROR;
     }
 
-    return mHardware->storeMetaDataInBuffers(enableMetadataInBuffers);
+    if (videoBufferMode == VIDEO_BUFFER_MODE_DATA_CALLBACK_YUV) {
+        return OK;
+    } else {
+        return mHardware->storeMetaDataInBuffers(enableMetadataInBuffers);
+    }
 }
 
 bool CameraClient::previewEnabled() {
