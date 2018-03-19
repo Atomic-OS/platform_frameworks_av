@@ -108,8 +108,6 @@ struct BufferMeta {
           mCopyToOmx(portIndex == kPortIndexInput && copy),
           mPortIndex(portIndex),
           mBackup(backup) {
-          ALOGE("AdrianDC BufferMeta copyfrom %d copyto %d port %d backup %d",
-              mCopyFromOmx, mCopyToOmx, mPortIndex, mBackup != NULL ? *mBackup : -42);
     }
 
     explicit BufferMeta(OMX_U32 portIndex)
@@ -676,24 +674,19 @@ status_t OMXNodeInstance::setConfig(
 }
 
 status_t OMXNodeInstance::setPortMode(OMX_U32 portIndex, IOMX::PortMode mode) {
-ALOGE("AdrianDC setPortMode 1 %s(%d) %d / num %d / sailed %d / portbuf %d", asString(mode), mode, portIndex, NELEM(mPortMode), mSailed, mNumPortBuffers[portIndex]);
     Mutex::Autolock autoLock(mLock);
-ALOGE("AdrianDC setPortMode 2 %s(%d) %d / num %d / sailed %d / portbuf %d", asString(mode), mode, portIndex, NELEM(mPortMode), mSailed, mNumPortBuffers[portIndex]);
 
     if (portIndex >= NELEM(mPortMode)) {
-       ALOGE("AdrianDC setPortMode portIndex >= NELEM(mPortMode)");
         ALOGE("b/31385713, portIndex(%u)", portIndex);
         android_errorWriteLog(0x534e4554, "31385713");
         return BAD_VALUE;
     }
 
     if (mSailed || mNumPortBuffers[portIndex] > 0) {
-       ALOGE("AdrianDC setPortMode mSailed || mNumPortBuffers[portIndex] > 0");
         android_errorWriteLog(0x534e4554, "29422020");
         return INVALID_OPERATION;
     }
 
-ALOGE("AdrianDC setPortMode %s(%d) %d", asString(mode), mode, portIndex);
     CLOG_CONFIG(setPortMode, "%s(%d), port %d", asString(mode), mode, portIndex);
 
     switch (mode) {
@@ -714,7 +707,6 @@ ALOGE("AdrianDC setPortMode %s(%d) %d", asString(mode), mode, portIndex);
             }
         }
         (void)enableNativeBuffers_l(portIndex, OMX_FALSE /*graphic*/, OMX_FALSE);
-        ALOGE("AdrianDC setPortMode kPortModeDynamicANWBuffer");
         return storeMetaDataInBuffers_l(portIndex, OMX_TRUE, NULL);
     }
 
@@ -728,7 +720,6 @@ ALOGE("AdrianDC setPortMode %s(%d) %d", asString(mode), mode, portIndex);
         (void)enableNativeBuffers_l(portIndex, OMX_TRUE /*graphic*/, OMX_FALSE);
         (void)enableNativeBuffers_l(portIndex, OMX_FALSE /*graphic*/, OMX_FALSE);
 
-        ALOGE("AdrianDC setPortMode kMetadataBufferTypeNativeHandleSource");
         MetadataBufferType metaType = kMetadataBufferTypeNativeHandleSource;
         return storeMetaDataInBuffers_l(portIndex, OMX_TRUE, &metaType);
     }
@@ -738,19 +729,16 @@ ALOGE("AdrianDC setPortMode %s(%d) %d", asString(mode), mode, portIndex);
         // Allow on both input and output.
         (void)storeMetaDataInBuffers_l(portIndex, OMX_FALSE, NULL);
         (void)enableNativeBuffers_l(portIndex, OMX_TRUE /*graphic*/, OMX_FALSE);
-        ALOGE("AdrianDC setPortMode kPortModePresetSecureBuffer");
         return enableNativeBuffers_l(portIndex, OMX_FALSE /*graphic*/, OMX_TRUE);
     }
 
     case IOMX::kPortModePresetANWBuffer:
     {
-        ALOGE("AdrianDC setPortMode kPortModePresetANWBuffer");
         if (portIndex != kPortIndexOutput) {
             CLOG_ERROR(setPortMode, BAD_VALUE,
                     "%s(%d) mode is only supported on output port", asString(mode), mode);
             return BAD_VALUE;
         }
-        ALOGE("AdrianDC setPortMode kPortModePresetANWBuffer");
 
         // Check if we're simulating legacy mode with metadata mode,
         // if so, enable metadata mode.
@@ -766,7 +754,6 @@ ALOGE("AdrianDC setPortMode %s(%d) %d", asString(mode), mode, portIndex);
 
             mLegacyAdaptiveExperiment = false;
         }
-        ALOGE("AdrianDC setPortMode kPortModePresetANWBuffer");
 
         // Disable secure buffer and enable graphic buffer
         (void)enableNativeBuffers_l(portIndex, OMX_FALSE /*graphic*/, OMX_FALSE);
@@ -777,7 +764,6 @@ ALOGE("AdrianDC setPortMode %s(%d) %d", asString(mode), mode, portIndex);
 
         // Not running experiment, or metadata is not supported.
         // Disable metadata mode and use legacy mode.
-        ALOGE("AdrianDC setPortMode kPortModePresetANWBuffer");
         (void)storeMetaDataInBuffers_l(portIndex, OMX_FALSE, NULL);
         return OK;
     }
@@ -787,7 +773,6 @@ ALOGE("AdrianDC setPortMode %s(%d) %d", asString(mode), mode, portIndex);
         // Disable secure buffer, native buffer and metadata.
         (void)enableNativeBuffers_l(portIndex, OMX_TRUE /*graphic*/, OMX_FALSE);
         (void)enableNativeBuffers_l(portIndex, OMX_FALSE /*graphic*/, OMX_FALSE);
-        ALOGE("AdrianDC setPortMode kPortModePresetByteBuffer");
         (void)storeMetaDataInBuffers_l(portIndex, OMX_FALSE, NULL);
         return OK;
     }
@@ -890,7 +875,6 @@ status_t OMXNodeInstance::getGraphicBufferUsage(
 
 status_t OMXNodeInstance::storeMetaDataInBuffers_l(
         OMX_U32 portIndex, OMX_BOOL enable, MetadataBufferType *type) {
-    ALOGE("AdrianDC storeMetaDataInBuffers_l index %d enable %d type %d", portIndex, enable, type != NULL ? *type : -111);
     if (mSailed) {
         android_errorWriteLog(0x534e4554, "29422020");
         return INVALID_OPERATION;
@@ -1075,22 +1059,17 @@ status_t OMXNodeInstance::useBuffer(
         return BAD_VALUE;
     }
 
-    ALOGE("AdrianDC useBuffer %d", omxBuffer.mBufferType);
     switch (omxBuffer.mBufferType) {
         case OMXBuffer::kBufferTypePreset:
-            ALOGE("AdrianDC useBuffer mBufferType");
             return useBuffer_l(portIndex, NULL, NULL, buffer);
 
         case OMXBuffer::kBufferTypeSharedMem:
-            ALOGE("AdrianDC useBuffer kBufferTypeSharedMem");
             return useBuffer_l(portIndex, omxBuffer.mMem, NULL, buffer);
 
         case OMXBuffer::kBufferTypeANWBuffer:
-            ALOGE("AdrianDC useBuffer kBufferTypeANWBuffer");
             return useGraphicBuffer_l(portIndex, omxBuffer.mGraphicBuffer, buffer);
 
         case OMXBuffer::kBufferTypeHidlMemory: {
-            ALOGE("AdrianDC useBuffer kBufferTypeHidlMemory");
                 sp<IHidlMemory> hidlMemory = mapMemory(omxBuffer.mHidlMemory);
                 if (hidlMemory == nullptr) {
                     ALOGE("OMXNodeInstance useBuffer() failed to map memory");
@@ -1099,7 +1078,6 @@ status_t OMXNodeInstance::useBuffer(
                 return useBuffer_l(portIndex, NULL, hidlMemory, buffer);
             }
         default:
-            ALOGE("AdrianDC useBuffer default");
             break;
     }
 
@@ -1114,10 +1092,8 @@ status_t OMXNodeInstance::useBuffer_l(
     OMX_ERRORTYPE err = OMX_ErrorNone;
     bool isMetadata = mMetadataType[portIndex] != kMetadataBufferTypeInvalid;
 
-    ALOGE("AdrianDC useBuffer_l 1 port %d type %d bool %d", portIndex, mMetadataType[portIndex], isMetadata);
     if (!isMetadata && mGraphicBufferEnabled[portIndex]) {
         ALOGE("b/62948670");
-        ALOGE("AdrianDC b/62948670");
         android_errorWriteLog(0x534e4554, "62948670");
         return INVALID_OPERATION;
     }
@@ -1136,7 +1112,6 @@ status_t OMXNodeInstance::useBuffer_l(
     } else {
         paramsPointer = nullptr;
     }
-    ALOGE("AdrianDC useBuffer_l 2 %d = %d", isMetadata, mMetadataType[portIndex]);
 
     OMX_U32 allottedSize;
     if (isMetadata) {
@@ -1157,7 +1132,6 @@ status_t OMXNodeInstance::useBuffer_l(
         }
         allottedSize = paramsSize;
     }
-    ALOGE("AdrianDC useBuffer_l 3 %d", allottedSize);
 
     bool isOutputGraphicMetadata = (portIndex == kPortIndexOutput) &&
             (mMetadataType[portIndex] == kMetadataBufferTypeGrallocSource ||
@@ -1297,13 +1271,11 @@ status_t OMXNodeInstance::useGraphicBuffer2_l(
 status_t OMXNodeInstance::useGraphicBuffer_l(
         OMX_U32 portIndex, const sp<GraphicBuffer>& graphicBuffer,
         IOMX::buffer_id *buffer) {
-    ALOGE("AdrianDC useGraphicBuffer_l 1");
     if (graphicBuffer == NULL || buffer == NULL) {
         ALOGE("b/25884056");
         return BAD_VALUE;
     }
 
-    ALOGE("AdrianDC useGraphicBuffer_l 2");
     // First, see if we're in metadata mode. We could be running an experiment to simulate
     // legacy behavior (preallocated buffers) on devices that supports meta.
     if (mMetadataType[portIndex] != kMetadataBufferTypeInvalid) {
@@ -1311,7 +1283,6 @@ status_t OMXNodeInstance::useGraphicBuffer_l(
                 portIndex, graphicBuffer, buffer);
     }
 
-    ALOGE("AdrianDC useGraphicBuffer_l 3");
     if (!mGraphicBufferEnabled[portIndex]) {
         // Report error if this is not in graphic buffer mode.
         ALOGE("b/62948670");
@@ -1320,7 +1291,6 @@ status_t OMXNodeInstance::useGraphicBuffer_l(
     }
 
     // See if the newer version of the extension is present.
-    ALOGE("AdrianDC useGraphicBuffer_l 4");
     OMX_INDEXTYPE index;
     if (OMX_GetExtensionIndex(
             mHandle,
@@ -1329,7 +1299,6 @@ status_t OMXNodeInstance::useGraphicBuffer_l(
         return useGraphicBuffer2_l(portIndex, graphicBuffer, buffer);
     }
 
-    ALOGE("AdrianDC useGraphicBuffer_l 5");
     OMX_STRING name = const_cast<OMX_STRING>(
         "OMX.google.android.index.useAndroidNativeBuffer");
     OMX_ERRORTYPE err = OMX_GetExtensionIndex(mHandle, name, &index);
@@ -1353,7 +1322,6 @@ status_t OMXNodeInstance::useGraphicBuffer_l(
     };
 
     err = OMX_SetParameter(mHandle, index, &params);
-    ALOGE("AdrianDC useGraphicBuffer_l 6");
 
     if (err != OMX_ErrorNone) {
         CLOG_ERROR(setParameter, err, "%s(%#x): %s:%u meta=%p GB=%p", name, index,
@@ -1366,7 +1334,6 @@ status_t OMXNodeInstance::useGraphicBuffer_l(
 
         return StatusFromOMXError(err);
     }
-    ALOGE("AdrianDC useGraphicBuffer_l 7");
 
     CHECK_EQ(header->pAppPrivate, bufferMeta);
 
@@ -1375,7 +1342,6 @@ status_t OMXNodeInstance::useGraphicBuffer_l(
     addActiveBuffer(portIndex, *buffer);
     CLOG_BUFFER(useGraphicBuffer, NEW_BUFFER_FMT(
             *buffer, portIndex, "GB=%p", graphicBuffer->handle));
-    ALOGE("AdrianDC useGraphicBuffer_l 8");
     return OK;
 }
 
@@ -1492,10 +1458,8 @@ status_t OMXNodeInstance::setInputSurface(
         return ALREADY_EXISTS;
     }
 
-    ALOGE("setInputSurface NULL");
     err = storeMetaDataInBuffers_l(kPortIndexInput, OMX_TRUE, NULL);
     if (err != OK) {
-        ALOGE("setInputSurface Error");
         return err;
     }
 
