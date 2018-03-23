@@ -46,7 +46,7 @@ public:
         int32_t videoFrameRate,
         const sp<IGraphicBufferProducer>& surface,
         int64_t timeBetweenTimeLapseFrameCaptureUs,
-        bool storeMetaDataInVideoBuffers = true);
+        bool storeMetaDataInVideoBuffers = false);
 
     virtual ~CameraSourceTimeLapse();
 
@@ -123,7 +123,7 @@ private:
         int32_t videoFrameRate,
         const sp<IGraphicBufferProducer>& surface,
         int64_t timeBetweenTimeLapseFrameCaptureUs,
-        bool storeMetaDataInVideoBuffers = true);
+        bool storeMetaDataInVideoBuffers = false);
 
     // Wrapper over CameraSource::signalBufferReturned() to implement quick stop.
     // It only handles the case when mLastReadBufferCopy is signalled. Otherwise
